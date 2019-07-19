@@ -1,9 +1,11 @@
 import numpy as np
 import sys
 import os.path
-data_dir = "/Users/anshpatel/Desktop/Freiburg_analysis/behavioral/"
+#data_dir = "/Users/anshpatel/Desktop/Freiburg_analysis/behavioral/"
+data_dir = "/home1/melina.tsitsiklis/eyetracking/behavioral"
 
-subjects_id = ["200218","150318","100418","240418"]
+#subjects_id = ["200218","150318","100418","240418"]
+subjects_id = ["Melina"]
 
 min_sacc_thresh=12
 max_sacc_thresh=40
@@ -13,7 +15,7 @@ def calculate_vel(leftposX,leftposY,n,unique_samples,times):
         return 0
     else:
         time_diff=abs(times[n-2]-times[n+2])
-        if time_diff>0:
+        if time_diff>0: #nonzero time difference so velocity not infinite (only want unique samples)
             mov_vel=(leftposX[n-2,0]+leftposX[n-1,0]+leftposX[n+1,0]+leftposX[n+2,0])/(6*time_diff)
             return mov_vel
         else:
@@ -26,8 +28,8 @@ def calculate_saccades(velocity,thresh,unique_samples,times):
 	current_dist=100
 	prev_index=-1
 	saccade_samples=np.zeros([1,1],dtype=int)
-	for i in range(0,unique_samples-1):
-		if velocity[i,0]>(6*thresh):
+	for i in range(0,unique_samples-1): #get indices of samples that pass velocity threshold condition
+		if velocity[i,0]>(6*thresh): #is vel more than 6x std dev per staudigl 2016
 			saccade_samples=np.append(saccade_samples,i)
 			current_dist=i-prev_index
 			if current_dist<mindistance:
@@ -42,19 +44,19 @@ def calculate_saccades(velocity,thresh,unique_samples,times):
 	end_times=np.zeros([len(saccade_samples)-1,1],dtype=int)
 	end_times_sacc = np.zeros([len(saccade_samples)-1,1],dtype=int)
 	start_times_sacc = np.zeros([len(saccade_samples)-1,1],dtype=int)
-	for i in range(0,len(saccade_samples)-1):
+	for i in range(0,len(saccade_samples)-1): #find samples that exceed 12ms min condition
 		time_diff=times[saccade_samples[i+1,]]-times[saccade_samples[i,]]
-		norm_time_diff=time_diff/1000
+		norm_time_diff=time_diff/1000 #unix time is orginially in microseconds
 		succ_time_diff[i,0]=norm_time_diff
 		if norm_time_diff==0:
 			zeroes_count+=1
-		if norm_time_diff<12:
+		if norm_time_diff<12: #want greater than 12ms
 			increment_index=1
 			temp_time_diff=norm_time_diff
 			final_time_diff=0
 			prev_time_diff=0
 			succ_time_diff[i,0]=norm_time_diff
-			while temp_time_diff < 40:
+			while temp_time_diff < 40: #and also less than 40ms
 				prev_time_diff=temp_time_diff[0,] 
 				if i+increment_index < (len(saccade_samples)-1):
 					temp_time_diff+=(times[saccade_samples[i+increment_index,]]-times[saccade_samples[i+(increment_index-1),]])/1000
